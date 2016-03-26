@@ -23,6 +23,7 @@ public class CrawlerVehicle extends AbstractVerticle {
     private static final Logger log = LoggerFactory.getLogger(CrawlerVehicle.class);
 
     protected Map<String, String> urls = new HashMap<>();
+    protected Map<String, String> baseUrls = new HashMap<>();
     protected Map<String, Integer> files = new HashMap<>();
     protected Map<String, Integer> names = new HashMap<>();
     protected String rootUrl;
@@ -49,13 +50,19 @@ public class CrawlerVehicle extends AbstractVerticle {
                 return;
             }
 
+            final String fromUrl;
             final JsonArray redirects = messageJson.getJsonArray("redirects");
-            if (redirects != null) {
+            if (redirects != null && !redirects.isEmpty()) {
                 redirects.forEach(redirect -> urls.put((String) redirect, file));
+                fromUrl = redirects.getString(redirects.size() - 1);
+            } else {
+                fromUrl = messageJson.getString("url");
             }
 
+            baseUrls.put(file, fromUrl);
+
             if (level < depth) {
-                getVertx().eventBus().send(CrawlMessages.PARSE, new JsonObject().put("file", file).put("level", level + 1));
+                getVertx().eventBus().send(CrawlMessages.PARSE, new JsonObject().put("file", file).put("url", fromUrl).put("level", level + 1));
             } else {
                 log.debug(messageJson.getString("url") + " reach level " + level + " and will not to be parsed");
                 processedUrl();
@@ -66,7 +73,8 @@ public class CrawlerVehicle extends AbstractVerticle {
             log.trace("Found url " + message.body());
 
             final JsonObject messageJson = (JsonObject) message.body();
-            final Optional<String> urlOpt = checkUrl(messageJson.getString("url"));
+            final String baseUrl = messageJson.getString("baseUrl");
+            final Optional<String> urlOpt = checkUrl(messageJson.getString("url"), baseUrl);
 
             urlOpt.ifPresent(url -> {
                 final int level = messageJson.getInteger("level");
@@ -77,23 +85,22 @@ public class CrawlerVehicle extends AbstractVerticle {
                         files.put(storedFile, level);
                         if (storedLevel >= depth && level < depth) {
                             processed++;
-                            getVertx().eventBus().send(CrawlMessages.PARSE, new JsonObject().put("file", storedFile).put("level", level + 1));
+                            getVertx().eventBus().send(CrawlMessages.PARSE, new JsonObject()
+                                    .put("file", storedFile).put("url", baseUrls.get(storedFile)).put("level", level + 1));
                         }
                     }
-                    message.reply(fileToUrl(storedFile));
-                    return;
-                }
 
-                try {
-                    final String file = urlToPath(new URL(URLDecoder.decode(url, "utf-8"))).toString();
-                    urls.put(url, file);
-                    files.put(file, level);
+                    message.reply(fileToUrl(storedFile, baseUrl));
+                } else {
 
-                    message.reply(fileToUrl(file));
-                    processed++;
-                    getVertx().eventBus().send(CrawlMessages.DOWNLOAD, new JsonObject().put("url", url).put("file", file));
-                } catch (MalformedURLException | UnsupportedEncodingException e) {
-                    log.error("Bad url " + url, e);
+                    urlToPath(url).map(Path::toString).ifPresent(file -> {
+                        urls.put(url, file);
+                        files.put(file, level);
+
+                        message.reply(fileToUrl(file, baseUrl));
+                        processed++;
+                        getVertx().eventBus().send(CrawlMessages.DOWNLOAD, new JsonObject().put("url", url).put("file", file));
+                    });
                 }
             });
 
@@ -121,6 +128,19 @@ public class CrawlerVehicle extends AbstractVerticle {
     }
 
     protected final Pattern ulrPattern = Pattern.compile("[\u0001-\u001f<>:\"\\\\|?*\u007f]+");
+
+    protected Optional<Path> urlToPath(String urlString) {
+        if (urlString == null) {
+            return Optional.empty();
+        }
+
+        try {
+            return Optional.of(urlToPath(new URL(URLDecoder.decode(urlString, "utf-8"))));
+        } catch (MalformedURLException | UnsupportedEncodingException e) {
+            log.error("Bad url " + urlString, e);
+            return Optional.empty();
+        }
+    }
 
     protected Path urlToPath(URL url) {
         final Path path = rootDir.resolve(ulrPattern.matcher(url.getHost() + url.getPath()).replaceAll("")).toAbsolutePath();
@@ -163,24 +183,37 @@ public class CrawlerVehicle extends AbstractVerticle {
         return name + "_" + newCount;
     }
 
-    protected Optional<String> checkUrl(String urlString) {
+    protected Optional<String> checkUrl(String urlString, String baseUrlString) {
         URL url;
         try {
             url = new URL(urlString);
         } catch (MalformedURLException e) {
-            final String resolvedUrl;
-            if (urlString.startsWith("//")) {
-                resolvedUrl = config().getString("protocol") + ":" + urlString;
-            } else if (urlString.startsWith("/")) {
-                resolvedUrl = config().getString("protocol") + "://" + config().getString("host") + urlString;
-            } else {
-                resolvedUrl = config().getString("protocol") + "://" + config().getString("host") + "/" + urlString;
+            String resolvedUrl;
+            try {
+                final URL baseUrl = new URL(baseUrlString);
+                if (urlString.startsWith("//")) {
+                    resolvedUrl = baseUrl.getProtocol() + ":" + urlString;
+                } else if (urlString.startsWith("/")) {
+                    resolvedUrl = baseUrl.getProtocol() + "://" + baseUrl.getHost() + urlString;
+                } else {
+                    final String basePath = baseUrl.getPath();
+                    final int slashIndex = basePath.lastIndexOf("/");
+                    resolvedUrl = baseUrl.getProtocol() + "://" + baseUrl.getHost() + (slashIndex == -1 ? "" : basePath.substring(0, slashIndex)) + "/" + urlString;
+                }
+            } catch (MalformedURLException e1) {
+                if (urlString.startsWith("//")) {
+                    resolvedUrl = config().getString("protocol") + ":" + urlString;
+                } else if (urlString.startsWith("/")) {
+                    resolvedUrl = config().getString("protocol") + "://" + config().getString("host") + urlString;
+                } else {
+                    resolvedUrl = config().getString("protocol") + "://" + config().getString("host") + "/" + urlString;
+                }
             }
 
             try {
                 url = new URL(resolvedUrl);
-            } catch (MalformedURLException e1) {
-                log.warn("Bad url " + urlString, e1);
+            } catch (MalformedURLException e2) {
+                log.warn("Bad url " + urlString, e2);
                 return Optional.empty();
             }
         }
@@ -193,8 +226,8 @@ public class CrawlerVehicle extends AbstractVerticle {
         return Optional.of(url.toString());
     }
 
-    protected String fileToUrl(String file) {
-        return rootDir.relativize(Paths.get(file)).toString();
+    protected String fileToUrl(String file, String baseUrl) {
+        return urlToPath(baseUrl).map(basePath -> basePath.getParent().relativize(Paths.get(file))).orElse(rootDir.relativize(Paths.get(file))).toString();
     }
 
     protected void processedUrl() {

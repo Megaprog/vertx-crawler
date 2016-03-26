@@ -28,14 +28,16 @@ public class ParserVehicle extends AbstractVerticle {
 
             final JsonObject messageJson = (JsonObject) message.body();
             final String file = messageJson.getString("file");
+            final String baseUrl = messageJson.getString("url");
             final int level = messageJson.getInteger("level");
             try {
-                final Document document = Jsoup.parse(new File(file), "utf-8");
+                final Document document = Jsoup.parse(new File(file), "utf-8", baseUrl);
                 final Elements links = document.select("a[href]:not([href^=#]):not([href^=javascript]):not([rel=nofollow]):not([download])");
 
                 final int[] counter = new int[1];
                 links.forEach(element -> {
-                    getVertx().eventBus().send(CrawlMessages.URL_FOUND, new JsonObject().put("url", element.attr("href")).put("level", level), ar -> {
+                    getVertx().eventBus().send(CrawlMessages.URL_FOUND, new JsonObject()
+                            .put("url", element.attr("href")).put("baseUrl", baseUrl).put("level", level), ar -> {
                         if (ar.succeeded()) {
                             final String newUrl = (String) ar.result().body();
                             if (newUrl != null) {
