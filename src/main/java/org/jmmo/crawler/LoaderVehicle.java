@@ -83,6 +83,14 @@ public class LoaderVehicle extends AbstractVerticle {
 
                 log.trace("Response status: " + response.statusCode() + " " + response.statusMessage());
 
+                final String contentType = response.getHeader("Content-Type");
+                if (contentType == null || !response.getHeader("Content-Type").startsWith("text/html")) {
+                    downloads--;
+                    log.debug("Ignored content type " + contentType + " of " + currentUrl);
+                    getVertx().eventBus().send(CrawlMessages.DOWNLOAD_FAIL, jsonResult(originalUrl, file, redirectsTo).put("content-type", contentType));
+                    return;
+                }
+
                 switch (response.statusCode()) {
                     case 200: {
                         getVertx().executeBlocking(future -> {
@@ -111,7 +119,9 @@ public class LoaderVehicle extends AbstractVerticle {
 
                         break;
                     }
-                    case 301: {
+                    case 301:
+                    case 302:
+                    case 303: {
                         downloads--;
 
                         final String redirect = response.getHeader("location");
@@ -119,6 +129,7 @@ public class LoaderVehicle extends AbstractVerticle {
 
                         if (originalUrl.equals(redirect) || redirectsTo.contains(redirect)) {
                             log.warn("Cyclic redirects from " + currentUrl + ", original url " + originalUrl + ", redirects " + redirectsTo);
+                            getVertx().eventBus().send(CrawlMessages.DOWNLOAD_FAIL, jsonResult(originalUrl, file, redirectsTo).put("cyclic", redirect));
                         } else {
                             redirectsTo.add(redirect);
                             download(originalUrl, file, redirectsTo);
@@ -128,7 +139,7 @@ public class LoaderVehicle extends AbstractVerticle {
                     }
                     default: {
                         downloads--;
-
+                        log.debug("Failed to load " + currentUrl + " because of status code " + response.statusCode());
                         getVertx().eventBus().send(CrawlMessages.DOWNLOAD_FAIL, jsonResult(originalUrl, file, redirectsTo).put("status", response.statusCode()));
                     }
                 }
@@ -136,7 +147,7 @@ public class LoaderVehicle extends AbstractVerticle {
 
             request.exceptionHandler(e -> {
                 downloads--;
-                log.warn("Cannot establish http connection", e);
+                log.warn("Cannot establish http connection to " + currentUrl, e);
 
                 getVertx().eventBus().send(CrawlMessages.DOWNLOAD_FAIL, jsonResult(originalUrl, file, redirectsTo).put("error", e.toString()));
             });

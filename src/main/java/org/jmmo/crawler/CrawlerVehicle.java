@@ -56,6 +56,9 @@ public class CrawlerVehicle extends AbstractVerticle {
 
             if (level < depth) {
                 getVertx().eventBus().send(CrawlMessages.PARSE, new JsonObject().put("file", file).put("level", level + 1));
+            } else {
+                processed--;
+                log.debug(messageJson.getString("url") + " reach level " + level + " and will not to be parsed");
             }
         });
 
@@ -96,10 +99,15 @@ public class CrawlerVehicle extends AbstractVerticle {
         getVertx().eventBus().consumer(CrawlMessages.PARSED, message -> {
             log.debug("Parsed " + message.body());
 
-            if (--processed <= 0) {
+            processed--;
+            if (processed <= 0) {
                 log.info("Crawling the " + rootUrl + " is done");
                 getVertx().eventBus().publish(CrawlMessages.DONE, rootUrl);
             }
+        });
+
+        getVertx().eventBus().consumer(CrawlMessages.DOWNLOAD_FAIL, message -> {
+            processed--;
         });
 
         getVertx().eventBus().send(CrawlMessages.URL_FOUND, new JsonObject().put("url", rootUrl).put("level", 0));
@@ -154,26 +162,33 @@ public class CrawlerVehicle extends AbstractVerticle {
     }
 
     protected Optional<String> checkUrl(String urlString) {
+        URL url;
         try {
-            new URL(urlString);
-            return Optional.of(urlString);
+            url = new URL(urlString);
         } catch (MalformedURLException e) {
             final String resolvedUrl;
             if (urlString.startsWith("//")) {
                 resolvedUrl = config().getString("protocol") + ":" + urlString;
-            } else {
+            } else if (urlString.startsWith("/")) {
                 resolvedUrl = config().getString("protocol") + "://" + config().getString("host") + urlString;
+            } else {
+                resolvedUrl = config().getString("protocol") + "://" + config().getString("host") + "/" + urlString;
             }
 
             try {
-                new URL(resolvedUrl);
-                return Optional.of(resolvedUrl);
+                url = new URL(resolvedUrl);
             } catch (MalformedURLException e1) {
-                log.error("Bad url " + urlString, e1);
+                log.warn("Bad url " + urlString, e1);
+                return Optional.empty();
             }
         }
 
-        return Optional.empty();
+        if (!"http".equals(url.getProtocol()) && !"https".equals(url.getProtocol())) {
+            log.info("Unsupported protocol " + url.getProtocol() + " in url " + url + " ignore it");
+            return Optional.empty();
+        }
+
+        return Optional.of(url.toString());
     }
 
     protected String fileToUrl(String file) {

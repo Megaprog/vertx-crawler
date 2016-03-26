@@ -69,8 +69,8 @@ public class ParserVehicle extends AbstractVerticle {
                     });
                 });
 
-            } catch (IOException e) {
-                log.error("Cannot load file to parse " + file);
+            } catch (Exception e) {
+                log.error("Exception during parsing " + file, e);
             }
         });
     }
