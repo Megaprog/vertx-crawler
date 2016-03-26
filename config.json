@@ -1,0 +1,11 @@
+{
+  "url": "http://ru.wikipedia.org",
+  "dir": "output",
+  "loaders": 1,
+  "downloads": 6,
+  "delay": 300,
+  "parsers": 4,
+  "depth": 2,
+  "updateLinks": true,
+  "storeOriginals": false
+}

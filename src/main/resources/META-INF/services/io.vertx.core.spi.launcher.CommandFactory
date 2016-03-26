@@ -1,0 +1,2 @@
+org.jmmo.crawler.CrawlerCommandFactory
+org.jmmo.crawler.search.FindCommandFactory
