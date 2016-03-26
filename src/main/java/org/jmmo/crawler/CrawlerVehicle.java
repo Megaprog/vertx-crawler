@@ -161,10 +161,8 @@ public class CrawlerVehicle extends AbstractVerticle {
             final String resolvedUrl;
             if (urlString.startsWith("//")) {
                 resolvedUrl = config().getString("protocol") + ":" + urlString;
-            } else if (urlString.startsWith("/")) {
-                resolvedUrl = config().getString("protocol") + "://" + config().getString("host") + urlString;
             } else {
-                resolvedUrl = config().getString("protocol") + "://" + urlString;
+                resolvedUrl = config().getString("protocol") + "://" + config().getString("host") + urlString;
             }
 
             try {
