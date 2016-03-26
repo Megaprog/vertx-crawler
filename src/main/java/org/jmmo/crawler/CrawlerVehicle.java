@@ -57,8 +57,8 @@ public class CrawlerVehicle extends AbstractVerticle {
             if (level < depth) {
                 getVertx().eventBus().send(CrawlMessages.PARSE, new JsonObject().put("file", file).put("level", level + 1));
             } else {
-                processed--;
                 log.debug(messageJson.getString("url") + " reach level " + level + " and will not to be parsed");
+                processedUrl();
             }
         });
 
@@ -66,8 +66,9 @@ public class CrawlerVehicle extends AbstractVerticle {
             log.trace("Found url " + message.body());
 
             final JsonObject messageJson = (JsonObject) message.body();
+            final Optional<String> urlOpt = checkUrl(messageJson.getString("url"));
 
-            checkUrl(messageJson.getString("url")).ifPresent(url -> {
+            urlOpt.ifPresent(url -> {
                 final int level = messageJson.getInteger("level");
                 final String storedFile = urls.get(url);
                 if (storedFile != null) {
@@ -75,6 +76,7 @@ public class CrawlerVehicle extends AbstractVerticle {
                     if (level < storedLevel) {
                         files.put(storedFile, level);
                         if (storedLevel >= depth && level < depth) {
+                            processed++;
                             getVertx().eventBus().send(CrawlMessages.PARSE, new JsonObject().put("file", storedFile).put("level", level + 1));
                         }
                     }
@@ -88,26 +90,26 @@ public class CrawlerVehicle extends AbstractVerticle {
                     files.put(file, level);
 
                     message.reply(fileToUrl(file));
-                    getVertx().eventBus().send(CrawlMessages.DOWNLOAD, new JsonObject().put("url", url).put("file", file));
                     processed++;
+                    getVertx().eventBus().send(CrawlMessages.DOWNLOAD, new JsonObject().put("url", url).put("file", file));
                 } catch (MalformedURLException | UnsupportedEncodingException e) {
                     log.error("Bad url " + url, e);
                 }
             });
-        });
 
-        getVertx().eventBus().consumer(CrawlMessages.PARSED, message -> {
-            log.debug("Parsed " + message.body());
-
-            processed--;
-            if (processed <= 0) {
-                log.info("Crawling the " + rootUrl + " is done");
-                getVertx().eventBus().publish(CrawlMessages.DONE, rootUrl);
+            if (!urlOpt.isPresent()) {
+                message.reply(null);
             }
         });
 
+        getVertx().eventBus().consumer(CrawlMessages.PARSED, message -> {
+            log.trace("Parsed " + message.body());
+            processedUrl();
+        });
+
         getVertx().eventBus().consumer(CrawlMessages.DOWNLOAD_FAIL, message -> {
-            processed--;
+            log.trace("Download fail " + message.body());
+            processedUrl();
         });
 
         getVertx().eventBus().send(CrawlMessages.URL_FOUND, new JsonObject().put("url", rootUrl).put("level", 0));
@@ -193,5 +195,12 @@ public class CrawlerVehicle extends AbstractVerticle {
 
     protected String fileToUrl(String file) {
         return rootDir.relativize(Paths.get(file)).toString();
+    }
+
+    protected void processedUrl() {
+        if (--processed <= 0) {
+            log.info("Crawling the " + rootUrl + " is done");
+            getVertx().eventBus().publish(CrawlMessages.DONE, rootUrl);
+        }
     }
 }

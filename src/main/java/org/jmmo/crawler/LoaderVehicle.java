@@ -66,7 +66,7 @@ public class LoaderVehicle extends AbstractVerticle {
     protected void download(String originalUrl, String file, List<String> redirectsTo) {
         final String currentUrl = redirectsTo.isEmpty() ? originalUrl : redirectsTo.get(redirectsTo.size() - 1);
 
-        log.debug("Downloading " + currentUrl + " to " + file + " redirects=" + redirectsTo);
+        log.debug("Downloading " + currentUrl + " to " + file + ", original=" + originalUrl + ", redirects=" + redirectsTo);
 
         try {
             final URL url = new URL(currentUrl);
@@ -125,7 +125,7 @@ public class LoaderVehicle extends AbstractVerticle {
                         downloads--;
 
                         final String redirect = response.getHeader("location");
-                        log.debug("Redirected to " + redirect);
+                        log.debug("Redirected " + currentUrl + " to " + redirect);
 
                         if (originalUrl.equals(redirect) || redirectsTo.contains(redirect)) {
                             log.warn("Cyclic redirects from " + currentUrl + ", original url " + originalUrl + ", redirects " + redirectsTo);
@@ -139,7 +139,7 @@ public class LoaderVehicle extends AbstractVerticle {
                     }
                     default: {
                         downloads--;
-                        log.debug("Failed to load " + currentUrl + " because of status code " + response.statusCode());
+                        log.info("Failed to load " + currentUrl + " because of status code " + response.statusCode());
                         getVertx().eventBus().send(CrawlMessages.DOWNLOAD_FAIL, jsonResult(originalUrl, file, redirectsTo).put("status", response.statusCode()));
                     }
                 }
@@ -155,7 +155,8 @@ public class LoaderVehicle extends AbstractVerticle {
             request.end();
 
         } catch (MalformedURLException e) {
-            log.error("Bad url");
+            log.error("Bad url " + currentUrl, e);
+            getVertx().eventBus().send(CrawlMessages.DOWNLOAD_FAIL, jsonResult(originalUrl, file, redirectsTo).put("error", e.toString()));
         }
     }
 
