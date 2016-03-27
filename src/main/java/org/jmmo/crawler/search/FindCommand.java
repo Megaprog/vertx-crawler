@@ -18,6 +18,8 @@ public class FindCommand extends BareCommand {
     private String word;
     private String dir;
     private Integer finders;
+    private boolean sensitive;
+    private boolean whole;
 
     @Argument(index = 0, argName = "word", required = true)
     @Description("The word for searching.")
@@ -37,6 +39,20 @@ public class FindCommand extends BareCommand {
     @DefaultValue("2")
     public void setFinders(int finders) {
         this.finders = finders;
+    }
+
+    @Option(longName = "sensitive", argName = "sensitive", flag = true)
+    @Description("Will the search case sensitive or not. Defaults is false.")
+    @DefaultValue("false")
+    public void setSensitive(boolean sensitive) {
+        this.sensitive = sensitive;
+    }
+
+    @Option(longName = "whole", argName = "whole", flag = true)
+    @Description("Search for whole word only or not. Defaults is false.")
+    @DefaultValue("false")
+    public void setWhole(boolean whole) {
+        this.whole = whole;
     }
 
     @Override
@@ -59,6 +75,8 @@ public class FindCommand extends BareCommand {
         log.info("Word: " + word);
         log.info("Directory: " + dir);
         log.info("Finders: " + finders);
+        log.info("Sensitive: " + sensitive);
+        log.info("Whole: " + whole);
 
         if (word.trim().isEmpty()) {
             log.error("The word for searching cannot be empty");
@@ -73,9 +91,18 @@ public class FindCommand extends BareCommand {
         final JsonObject conf = new JsonObject();
         conf.put("word", word);
         conf.put("dir", dir);
+        conf.put("sensitive", sensitive);
+        conf.put("whole", whole);
 
-        vertx.deployVerticle(FinderVehicle.class.getName(), new DeploymentOptions().setInstances(finders), ar -> {
-            vertx.deployVerticle(SearchVehicle.class.getName(), new DeploymentOptions().setConfig(conf));
+        vertx.eventBus().consumer(SearchMessages.DONE, message -> {
+            log.info("All jobs done");
+            vertx.close();
         });
+
+        vertx.deployVerticle(FinderVehicle.class.getName(), new DeploymentOptions().setWorker(true).setInstances(finders), ar1 ->
+            vertx.deployVerticle(DirScannerVehicle.class.getName(), ar2 ->
+                vertx.deployVerticle(SearchVehicle.class.getName(), new DeploymentOptions().setConfig(conf))
+            )
+        );
     }
 }
