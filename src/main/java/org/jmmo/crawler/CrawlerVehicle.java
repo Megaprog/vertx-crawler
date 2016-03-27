@@ -115,12 +115,12 @@ public class CrawlerVehicle extends AbstractVerticle {
             processedUrl();
         });
 
-        getVertx().eventBus().consumer(CrawlMessages.DOWNLOAD_FAIL, message -> {
+        getVertx().eventBus().consumer(CrawlMessages.DOWNLOAD_FAILED, message -> {
             log.trace("Download fail " + message.body());
             processedUrl();
         });
 
-        getVertx().eventBus().consumer(CrawlMessages.PARSE_FAIL, message -> {
+        getVertx().eventBus().consumer(CrawlMessages.PARSE_FAILED, message -> {
             log.trace("Parse fail " + message.body());
             processedUrl();
         });

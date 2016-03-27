@@ -95,6 +95,6 @@ public class ParserVehicle extends AbstractVerticle {
     }
 
     protected void sendFail(String file) {
-        getVertx().eventBus().send(CrawlMessages.PARSE_FAIL, file);
+        getVertx().eventBus().send(CrawlMessages.PARSE_FAILED, file);
     }
 }
