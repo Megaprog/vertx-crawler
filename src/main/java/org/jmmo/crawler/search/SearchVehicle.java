@@ -30,33 +30,35 @@ public class SearchVehicle extends AbstractVerticle {
 
         getVertx().eventBus().consumer(SearchMessages.FOUND, message -> {
             final JsonObject messageJson = (JsonObject) message.body();
+            final int count = messageJson.getInteger("count");
 
-            System.out.println(messageJson.getInteger("frequency") + " " + messageJson.getString("file"));
+            if (count > 0) {
+                System.out.println(count + " " + messageJson.getString("file"));
+            }
 
             searches--;
             checkDone();
         });
 
         getVertx().eventBus().consumer(SearchMessages.FIND_FAILED, message -> {
-            log.debug("Find fail " + message.body());
+            log.trace("Find fail " + message.body());
             searches--;
             checkDone();
         });
 
         getVertx().eventBus().consumer(SearchMessages.SCAN_FAILED, message -> {
-            log.debug("Scan fail " + message.body());
+            log.trace("Scan fail " + message.body());
             directories--;
             checkDone();
         });
 
         getVertx().eventBus().consumer(SearchMessages.SCAN_COMPLETED, message -> {
-            log.debug("Scan completed " + message.body());
+            log.trace("Scan completed " + message.body());
             directories--;
             checkDone();
         });
 
         getVertx().eventBus().consumer(SearchMessages.SCANNED_FILE, message -> {
-            log.debug("Scanned file " + message.body());
             searches++;
             getVertx().eventBus().send(SearchMessages.FIND, new JsonObject()
                     .put("file", message.body()).put("word", word).put("sensitive", sensitive).put("whole", whole));
@@ -77,7 +79,7 @@ public class SearchVehicle extends AbstractVerticle {
 
     protected void checkDone() {
         if (directories <= 0 && searches <= 0) {
-            log.info("Search of the " + word + " in " + config().getString("dir") + " is done");
+            log.info("Search of the word '" + word + "' in " + config().getString("dir") + " is done");
             getVertx().eventBus().publish(SearchMessages.DONE, word);
         }
     }

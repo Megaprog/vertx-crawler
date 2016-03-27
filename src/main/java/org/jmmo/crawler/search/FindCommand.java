@@ -53,14 +53,12 @@ public class FindCommand extends BareCommand {
 
     @Option(longName = "sensitive", argName = "sensitive", flag = true)
     @Description("Will the search case sensitive or not. Defaults is false.")
-    @DefaultValue("false")
     public void setSensitive(boolean sensitive) {
         this.sensitive = sensitive;
     }
 
     @Option(longName = "whole", argName = "whole", flag = true)
     @Description("Search for whole word only or not. Defaults is false.")
-    @DefaultValue("false")
     public void setWhole(boolean whole) {
         this.whole = whole;
     }

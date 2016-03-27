@@ -23,10 +23,15 @@ public class DirScannerVehicle extends AbstractVerticle {
             final Optional<Pattern> fileFilterOpt = Optional.ofNullable(messageJson.getString("fileFilter")).map(Pattern::compile);
 
             try {
-                getVertx().fileSystem().readDir(path, config().getString("filter"), dirResult -> {
+                getVertx().fileSystem().readDir(path, messageJson.getString("filter"), dirResult -> {
                     if (dirResult.failed()) {
                         log.error("Fail during reading dir " + path, dirResult.cause());
                         sendFail(path);
+                        return;
+                    }
+
+                    if (dirResult.result().isEmpty()) {
+                        getVertx().eventBus().send(SearchMessages.SCAN_COMPLETED, path);
                         return;
                     }
 

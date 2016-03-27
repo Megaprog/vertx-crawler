@@ -41,6 +41,11 @@ public class ParserVehicle extends AbstractVerticle {
                 final Document document = Jsoup.parse(new File(file), "utf-8", baseUrl);
                 final Elements links = document.select("a[href]:not([href^=#]):not([href^=javascript]):not([rel=nofollow]):not([download])");
 
+                if (links.isEmpty()) {
+                    getVertx().eventBus().send(CrawlMessages.PARSED, file);
+                    return;
+                }
+
                 final int[] counter = new int[1];
                 links.forEach(element -> {
                     getVertx().eventBus().send(CrawlMessages.URL_FOUND, new JsonObject()
