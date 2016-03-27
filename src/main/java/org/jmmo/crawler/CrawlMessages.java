@@ -12,6 +12,8 @@ public class CrawlMessages {
 
     public static final String PARSED = "crawler.parsed";
 
+    public static final String PARSE_FAIL = "crawler.parse_fail";
+
     public static final String URL_FOUND = "crawler.link_found";
 
     public static final String DONE = "crawler.done";

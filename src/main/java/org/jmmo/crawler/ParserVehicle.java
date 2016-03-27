@@ -30,6 +30,7 @@ public class ParserVehicle extends AbstractVerticle {
             final String file = messageJson.getString("file");
             final String baseUrl = messageJson.getString("url");
             final int level = messageJson.getInteger("level");
+
             try {
                 final Document document = Jsoup.parse(new File(file), "utf-8", baseUrl);
                 final Elements links = document.select("a[href]:not([href^=#]):not([href^=javascript]):not([rel=nofollow]):not([download])");
@@ -37,7 +38,7 @@ public class ParserVehicle extends AbstractVerticle {
                 final int[] counter = new int[1];
                 links.forEach(element -> {
                     getVertx().eventBus().send(CrawlMessages.URL_FOUND, new JsonObject()
-                            .put("url", element.attr("href")).put("baseUrl", baseUrl).put("level", level), ar -> {
+                            .put("url", element.attr("href")).put("baseUrl", baseUrl).put("file", file).put("level", level), ar -> {
                         if (ar.succeeded()) {
                             final String newUrl = (String) ar.result().body();
                             if (newUrl != null) {
@@ -56,6 +57,8 @@ public class ParserVehicle extends AbstractVerticle {
                                         Files.move(original, backup);
                                     } catch (IOException e) {
                                         log.error("Cannot rename file " + original + " to " + backup, e);
+                                        sendFail(file);
+                                        return;
                                     }
                                 }
 
@@ -63,6 +66,8 @@ public class ParserVehicle extends AbstractVerticle {
                                     Files.write(original, document.toString().getBytes("utf-8"));
                                 } catch (IOException e) {
                                     log.error("Cannot save to file " + original, e);
+                                    sendFail(file);
+                                    return;
                                 }
                             }
 
@@ -73,6 +78,7 @@ public class ParserVehicle extends AbstractVerticle {
 
             } catch (Exception e) {
                 log.error("Exception during parsing " + file, e);
+                sendFail(file);
             }
         });
     }
@@ -80,5 +86,9 @@ public class ParserVehicle extends AbstractVerticle {
     @Override
     public void stop() throws Exception {
         log.info("stopped");
+    }
+
+    protected void sendFail(String file) {
+        getVertx().eventBus().send(CrawlMessages.PARSE_FAIL, file);
     }
 }

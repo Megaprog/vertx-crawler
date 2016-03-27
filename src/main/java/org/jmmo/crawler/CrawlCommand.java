@@ -77,13 +77,13 @@ public class CrawlCommand extends BareCommand {
     }
 
     @Option(longName = "depth", argName = "depth")
-    @Description("Specifies how deeply crawler must dig. Defaults is 9.")
+    @Description("Specifies how deeply crawler must dig. Defaults is 5.")
     public void setDepth(int depth) {
         this.depth = depth;
     }
 
     @Option(longName = "updateLinks", shortName = "ul", argName = "updateLinks")
-    @Description("Specifies would be links in html documents updated to point to downloaded pages. Defaults is true.")
+    @Description("Specifies would be links in html documents updated to point to downloaded pages. Defaults is false.")
     public void setUpdateLinks(String updateLinks) {
         this.updateLinks = Boolean.valueOf(updateLinks);
     }
@@ -117,8 +117,8 @@ public class CrawlCommand extends BareCommand {
         putNotNull(conf, "downloads", downloads, 10);
         putNotNull(conf, "delay", delay, 200);
         putNotNull(conf, "parsers", parsers, Runtime.getRuntime().availableProcessors());
-        putNotNull(conf, "depth", depth, 9);
-        putNotNull(conf, "updateLinks", updateLinks, true);
+        putNotNull(conf, "depth", depth, 5);
+        putNotNull(conf, "updateLinks", updateLinks, false);
         putNotNull(conf, "storeOriginals", storeOriginals, false);
 
         log.info("Crawler parameters:");

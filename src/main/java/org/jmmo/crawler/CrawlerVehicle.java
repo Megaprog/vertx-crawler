@@ -74,6 +74,7 @@ public class CrawlerVehicle extends AbstractVerticle {
 
             final JsonObject messageJson = (JsonObject) message.body();
             final String baseUrl = messageJson.getString("baseUrl");
+            final String baseFile = messageJson.getString("file");
             final Optional<String> urlOpt = checkUrl(messageJson.getString("url"), baseUrl);
 
             urlOpt.ifPresent(url -> {
@@ -90,14 +91,14 @@ public class CrawlerVehicle extends AbstractVerticle {
                         }
                     }
 
-                    message.reply(fileToUrl(storedFile, baseUrl));
+                    message.reply(fileToUrl(storedFile, baseFile));
                 } else {
 
                     urlToPath(url).map(Path::toString).ifPresent(file -> {
                         urls.put(url, file);
                         files.put(file, level);
 
-                        message.reply(fileToUrl(file, baseUrl));
+                        message.reply(fileToUrl(file, baseFile));
                         processed++;
                         getVertx().eventBus().send(CrawlMessages.DOWNLOAD, new JsonObject().put("url", url).put("file", file));
                     });
@@ -116,6 +117,11 @@ public class CrawlerVehicle extends AbstractVerticle {
 
         getVertx().eventBus().consumer(CrawlMessages.DOWNLOAD_FAIL, message -> {
             log.trace("Download fail " + message.body());
+            processedUrl();
+        });
+
+        getVertx().eventBus().consumer(CrawlMessages.PARSE_FAIL, message -> {
+            log.trace("Parse fail " + message.body());
             processedUrl();
         });
 
@@ -226,8 +232,12 @@ public class CrawlerVehicle extends AbstractVerticle {
         return Optional.of(url.toString());
     }
 
-    protected String fileToUrl(String file, String baseUrl) {
-        return urlToPath(baseUrl).map(basePath -> basePath.getParent().relativize(Paths.get(file))).orElse(rootDir.relativize(Paths.get(file))).toString();
+    protected String fileToUrl(String file, String baseFile) {
+        if (baseFile == null) {
+            return rootDir.relativize(Paths.get(file)).toString();
+        }
+
+        return Paths.get(baseFile).getParent().relativize(Paths.get(file)).toString();
     }
 
     protected void processedUrl() {

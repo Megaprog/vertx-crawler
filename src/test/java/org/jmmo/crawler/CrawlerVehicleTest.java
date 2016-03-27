@@ -30,14 +30,14 @@ public class CrawlerVehicleTest {
     public void testUrlToPath() throws Exception {
         crawlerVehicle.rootDir = Paths.get("output").toAbsolutePath();
 
-        Path path = crawlerVehicle.urlToPath("http://sovavtomaty.ru").get();
-        assertEquals(Paths.get("output", "sovavtomaty.ru.html").toString(), path.getName(path.getNameCount() - 2).toString() + FileSystems.getDefault().getSeparator() + path.getFileName());
-        assertEquals("sovavtomaty.ru.html", crawlerVehicle.fileToUrl(path.toString(), null));
+        Path path1 = crawlerVehicle.urlToPath("http://sovavtomaty.ru").get();
+        assertEquals(Paths.get("output", "sovavtomaty.ru.html").toString(), path1.getName(path1.getNameCount() - 2).toString() + FileSystems.getDefault().getSeparator() + path1.getFileName());
+        assertEquals("sovavtomaty.ru.html", crawlerVehicle.fileToUrl(path1.toString(), null));
 
-        path = crawlerVehicle.urlToPath("http://sovavtomaty.ru/video.html").get();
-        assertEquals(Paths.get("sovavtomaty.ru", "video.html").toString(), crawlerVehicle.fileToUrl(path.toString(), "http://sovavtomaty.ru"));
+        Path path2 = crawlerVehicle.urlToPath("http://sovavtomaty.ru/video.html").get();
+        assertEquals(Paths.get("sovavtomaty.ru", "video.html").toString(), crawlerVehicle.fileToUrl(path2.toString(), path1.toString()));
 
-        path = crawlerVehicle.urlToPath("http://sovavtomaty.ru/links.html").get();
-        assertEquals("links.html", crawlerVehicle.fileToUrl(path.toString(), "http://sovavtomaty.ru/video.html"));
+        Path path3 = crawlerVehicle.urlToPath("http://sovavtomaty.ru/links.html").get();
+        assertEquals("links.html", crawlerVehicle.fileToUrl(path3.toString(), path2.toString()));
     }
 }
