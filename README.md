@@ -1,16 +1,21 @@
 # Web Crawler
 
-Async Web Crawler based on [Vert.x](http://vertx.io/) framework.
+Async multi-threaded Web Crawler based on [Vert.x](http://vertx.io/) framework.
+
+Contains two main commands: 
+
+* crawl - for crawling the Web
+* find - for multi-threaded searching word in directory recursively
 
 ## Known limitations
 
-* Only HTML files are downloading
-* Only UTF-8 encoding is supported
+* Crawls only HTML files
+* Only UTF-8 encoding is supported (for searching too)
 * The option --resolveLinks is experimental and works only with anchor links (tag &lt;a>) which point the html files
 
 ## How to package it?
 
-mvn clean package
+    mvn clean package
 
 vertx-crawler-1.0-SNAPSHOT-fat.jar file will be created at target directory
 
