@@ -1,6 +1,7 @@
 package org.jmmo.crawler.search;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,6 +11,13 @@ public class DirScannerVehicle extends AbstractVerticle {
     @Override
     public void start() throws Exception {
         log.debug("started");
+
+        getVertx().eventBus().consumer(SearchMessages.SCAN, message -> {
+            log.debug("Scanning " + message.body());
+
+            final JsonObject messageJson = (JsonObject) message.body();
+
+        });
     }
 
     @Override

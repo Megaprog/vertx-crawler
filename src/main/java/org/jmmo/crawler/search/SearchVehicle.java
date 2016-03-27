@@ -9,6 +9,7 @@ public class SearchVehicle extends AbstractVerticle {
     private static final Logger log = LoggerFactory.getLogger(SearchVehicle.class);
 
     protected String word;
+    protected String fileFilter;
     protected Boolean sensitive;
     protected Boolean whole;
 
@@ -22,6 +23,10 @@ public class SearchVehicle extends AbstractVerticle {
         word = config().getString("word");
         sensitive = config().getBoolean("sensitive");
         whole = config().getBoolean("whole");
+        final String extension = config().getString("ext");
+        if (extension != null && !extension.isEmpty() && !"*".equals(extension)) {
+            fileFilter = "(?i).+\\." + extension;
+        }
 
         getVertx().eventBus().consumer(SearchMessages.FOUND, message -> {
             final JsonObject messageJson = (JsonObject) message.body();
@@ -45,7 +50,7 @@ public class SearchVehicle extends AbstractVerticle {
 
         getVertx().eventBus().consumer(SearchMessages.SCANNED_DIRECTORY, message -> {
             directories++;
-            getVertx().eventBus().send(SearchMessages.SCAN, new JsonObject().put("path", message.body()).put("fileFilter", "(?i).+\\.html"));
+            getVertx().eventBus().send(SearchMessages.SCAN, new JsonObject().put("path", message.body()).put("fileFilter", fileFilter));
         });
 
         getVertx().eventBus().send(SearchMessages.SCANNED_DIRECTORY, config().getString("dir"));

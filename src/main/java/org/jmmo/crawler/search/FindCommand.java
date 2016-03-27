@@ -17,6 +17,7 @@ public class FindCommand extends BareCommand {
 
     private String word;
     private String dir;
+    private String extension;
     private Integer finders;
     private boolean sensitive;
     private boolean whole;
@@ -32,6 +33,15 @@ public class FindCommand extends BareCommand {
     @DefaultValue(".")
     public void setDir(String dir) {
         this.dir = dir;
+    }
+
+    @Option(longName = "ext", argName = "extension")
+    @Description("Specifies file extension for searching. " +
+            "If is present then word will be searching only in files with same extension. " +
+            "Defaults is * means all extensions.")
+    @DefaultValue("*")
+    public void setExtension(String extension) {
+        this.extension = extension;
     }
 
     @Option(longName = "finders", argName = "finders")
@@ -74,6 +84,7 @@ public class FindCommand extends BareCommand {
         log.info("Finder parameters:");
         log.info("Word: " + word);
         log.info("Directory: " + dir);
+        log.info("Extension: " + extension);
         log.info("Finders: " + finders);
         log.info("Sensitive: " + sensitive);
         log.info("Whole: " + whole);
@@ -91,6 +102,7 @@ public class FindCommand extends BareCommand {
         final JsonObject conf = new JsonObject();
         conf.put("word", word);
         conf.put("dir", dir);
+        conf.put("ext", extension);
         conf.put("sensitive", sensitive);
         conf.put("whole", whole);
 
