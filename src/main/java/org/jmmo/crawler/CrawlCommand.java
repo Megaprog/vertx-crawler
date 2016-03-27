@@ -82,13 +82,13 @@ public class CrawlCommand extends BareCommand {
         this.depth = depth;
     }
 
-    @Option(longName = "updateLinks", shortName = "ul", argName = "updateLinks")
+    @Option(longName = "updateLinks", argName = "updateLinks")
     @Description("(Experimental) specifies would be links in html documents updated to point to downloaded pages. Defaults is false.")
     public void setUpdateLinks(String updateLinks) {
         this.updateLinks = Boolean.valueOf(updateLinks);
     }
 
-    @Option(longName = "storeOriginals", shortName = "so", argName = "storeOriginals")
+    @Option(longName = "storeOriginals", argName = "storeOriginals")
     @Description("Specifies would be original html documents stored after updating links or not. Defaults is false.")
     public void setStoreOriginals(String storeOriginals) {
         this.storeOriginals = Boolean.valueOf(storeOriginals);
