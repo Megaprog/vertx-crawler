@@ -16,9 +16,12 @@ public class SearchVehicle extends AbstractVerticle {
     protected int directories;
     protected int searches;
 
+    protected int totalFiles;
+    protected int totalEntries;
+
     @Override
     public void start() throws Exception {
-        log.debug("started");
+        log.info("Search started");
 
         word = config().getString("word");
         sensitive = config().getBoolean("sensitive");
@@ -33,6 +36,8 @@ public class SearchVehicle extends AbstractVerticle {
             final int count = messageJson.getInteger("count");
 
             if (count > 0) {
+                totalEntries += count;
+                totalFiles++;
                 System.out.println(count + " " + messageJson.getString("file"));
             }
 
@@ -80,6 +85,9 @@ public class SearchVehicle extends AbstractVerticle {
     protected void checkDone() {
         if (directories <= 0 && searches <= 0) {
             log.info("Search of the word '" + word + "' in " + config().getString("dir") + " is done");
+
+            System.out.println("Total: " + totalEntries + " entries in " + totalFiles + " files");
+
             getVertx().eventBus().publish(SearchMessages.DONE, word);
         }
     }

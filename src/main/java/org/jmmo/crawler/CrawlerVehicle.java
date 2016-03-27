@@ -33,7 +33,7 @@ public class CrawlerVehicle extends AbstractVerticle {
 
     @Override
     public void start() throws Exception {
-        log.debug("started");
+        log.info("Crawl started");
 
         rootUrl = config().getString("url");
         rootDir = Paths.get(config().getString("dir")).toAbsolutePath();
