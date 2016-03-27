@@ -22,8 +22,9 @@ vertx-crawler-1.0-SNAPSHOT-fat.jar file will be created at target directory
 ## How to run Crawl command?
 
     java -jar target/vertx-crawler-1.0-SNAPSHOT-fat.jar crawl [--conf=<config>] [--dir=<directory>] [--depth=<depth>] 
-                                                              [--delay=<delay>] [--downloads=<downloads>] [--loaders=<loaders>] 
-                                                              [--parsers=<parsers>] [--linksToFiles=<linksToFiles>] 
+                                                              [--delay=<delay>] [--downloads=<downloads>] 
+                                                              [--loaders=<loaders>] [--parsers=<parsers>] 
+                                                              [--linksToFiles=<linksToFiles>] 
                                                               [--storeOriginals=<storeOriginals>] url
 
 Options and Arguments:
