@@ -30,7 +30,8 @@ public class CrawlCommand extends BareCommand {
     private String directory;
     private Integer depth;
     private Integer delay;
-    private Boolean updateLinks;
+    private Boolean resolveLinks;
+    private Boolean linksToFiles;
     private Boolean storeOriginals;
 
     @Argument(index = 0, argName = "url", required = false)
@@ -82,10 +83,16 @@ public class CrawlCommand extends BareCommand {
         this.depth = depth;
     }
 
-    @Option(longName = "updateLinks", argName = "updateLinks")
-    @Description("(Experimental) specifies would be links in html documents updated to point to downloaded pages. Defaults is false.")
-    public void setUpdateLinks(String updateLinks) {
-        this.updateLinks = Boolean.valueOf(updateLinks);
+    @Option(longName = "resolveLinks", argName = "resolveLinks")
+    @Description("(Experimental) specifies would be links in html documents resolved to absolute urls. Defaults is true.")
+    public void setResolveLinks(String resolveLinks) {
+        this.resolveLinks = Boolean.valueOf(resolveLinks);
+    }
+
+    @Option(longName = "linksToFiles", argName = "linksToFiles")
+    @Description("(Experimental) specifies would be links in html documents changed to point the downloaded pages. Defaults is false.")
+    public void setLinksToFiles(String linksToFiles) {
+        this.linksToFiles = Boolean.valueOf(linksToFiles);
     }
 
     @Option(longName = "storeOriginals", argName = "storeOriginals")
@@ -118,7 +125,8 @@ public class CrawlCommand extends BareCommand {
         putNotNull(conf, "delay", delay, 200);
         putNotNull(conf, "parsers", parsers, Runtime.getRuntime().availableProcessors());
         putNotNull(conf, "depth", depth, 5);
-        putNotNull(conf, "updateLinks", updateLinks, false);
+        putNotNull(conf, "resolveLinks", resolveLinks, true);
+        putNotNull(conf, "linksToFiles", linksToFiles, false);
         putNotNull(conf, "storeOriginals", storeOriginals, false);
 
         log.info("Crawler parameters:");
@@ -130,7 +138,8 @@ public class CrawlCommand extends BareCommand {
         log.info("Delay: " + conf.getInteger("delay"));
         log.info("Parsers: " + conf.getInteger("parsers"));
         log.info("Depth: " + conf.getInteger("depth"));
-        log.info("Update links: " + conf.getBoolean("updateLinks"));
+        log.info("Resolve links: " + conf.getBoolean("resolveLinks"));
+        log.info("Links to files: " + conf.getBoolean("linksToFiles"));
         log.info("Store originals: " + conf.getBoolean("storeOriginals"));
 
         try {

@@ -6,6 +6,7 @@
   "delay": 200,
   "parsers": 4,
   "depth": 2,
-  "updateLinks": true,
+  "resolveLinks": true,
+  "linksToFiles": false,
   "storeOriginals": false
 }

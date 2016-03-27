@@ -26,9 +26,12 @@ public class CrawlerVehicle extends AbstractVerticle {
     protected Map<String, String> baseUrls = new HashMap<>();
     protected Map<String, Integer> files = new HashMap<>();
     protected Map<String, Integer> names = new HashMap<>();
+
     protected String rootUrl;
     protected Path rootDir;
     protected int depth;
+    protected boolean linksToFiles;
+
     protected int processed;
 
     @Override
@@ -38,11 +41,13 @@ public class CrawlerVehicle extends AbstractVerticle {
         rootUrl = config().getString("url");
         rootDir = Paths.get(config().getString("dir")).toAbsolutePath();
         depth = config().getInteger("depth");
+        linksToFiles = config().getBoolean("linksToFiles");
 
         getVertx().eventBus().consumer(CrawlMessages.DOWNLOADED, message -> {
-            log.trace("Downloaded " + message.body());
-
             final JsonObject messageJson = (JsonObject) message.body();
+
+            log.info("Downloaded " + messageJson.getString("url") + " to " + messageJson.getString("file") + " with redirects " + messageJson.getJsonArray("redirects"));
+
             final String file = messageJson.getString("file");
             final Integer level = files.get(file);
             if (level == null) {
@@ -91,14 +96,14 @@ public class CrawlerVehicle extends AbstractVerticle {
                         }
                     }
 
-                    message.reply(fileToUrl(storedFile, baseFile));
+                    message.reply(linksToFiles ? fileToUrl(storedFile, baseFile) : url);
                 } else {
 
                     urlToPath(url).map(Path::toString).ifPresent(file -> {
                         urls.put(url, file);
                         files.put(file, level);
 
-                        message.reply(fileToUrl(file, baseFile));
+                        message.reply(linksToFiles ? fileToUrl(file, baseFile) : url);
                         processed++;
                         getVertx().eventBus().send(CrawlMessages.DOWNLOAD, new JsonObject().put("url", url).put("file", file));
                     });

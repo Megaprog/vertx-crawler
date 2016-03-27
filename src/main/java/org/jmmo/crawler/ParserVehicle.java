@@ -19,14 +19,14 @@ public class ParserVehicle extends AbstractVerticle {
 
     private static final Logger log = LoggerFactory.getLogger(ParserVehicle.class);
 
-    protected boolean updateLinks;
+    protected boolean resolveLinks;
     protected boolean storeOriginals;
 
     @Override
     public void start() throws Exception {
         log.info("started");
 
-        updateLinks = config().getBoolean("updateLinks");
+        resolveLinks = config().getBoolean("resolveLinks");
         storeOriginals = config().getBoolean("storeOriginals");
 
         getVertx().eventBus().consumer(CrawlMessages.PARSE, message -> {
@@ -50,7 +50,7 @@ public class ParserVehicle extends AbstractVerticle {
                 links.forEach(element -> {
                     getVertx().eventBus().send(CrawlMessages.URL_FOUND, new JsonObject()
                             .put("url", element.attr("href")).put("baseUrl", baseUrl).put("file", file).put("level", level), ar -> {
-                        if (updateLinks && ar.succeeded()) {
+                        if (resolveLinks && ar.succeeded()) {
                             final String newUrl = (String) ar.result().body();
                             if (newUrl != null) {
                                 element.attr("href", newUrl);
@@ -58,7 +58,7 @@ public class ParserVehicle extends AbstractVerticle {
                         }
 
                         if (++counter[0] == links.size()) {
-                            if (updateLinks) {
+                            if (resolveLinks) {
                                 final Path original = Paths.get(file);
                                 if (storeOriginals) {
                                     final String name = original.getFileName().toString();
