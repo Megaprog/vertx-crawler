@@ -37,12 +37,26 @@ public class SearchVehicle extends AbstractVerticle {
             checkDone();
         });
 
+        getVertx().eventBus().consumer(SearchMessages.FIND_FAILED, message -> {
+            log.debug("Find fail " + message.body());
+            searches--;
+            checkDone();
+        });
+
+        getVertx().eventBus().consumer(SearchMessages.SCAN_FAILED, message -> {
+            log.debug("Scan fail " + message.body());
+            directories--;
+            checkDone();
+        });
+
         getVertx().eventBus().consumer(SearchMessages.SCAN_COMPLETED, message -> {
+            log.debug("Scan completed " + message.body());
             directories--;
             checkDone();
         });
 
         getVertx().eventBus().consumer(SearchMessages.SCANNED_FILE, message -> {
+            log.debug("Scanned file " + message.body());
             searches++;
             getVertx().eventBus().send(SearchMessages.FIND, new JsonObject()
                     .put("file", message.body()).put("word", word).put("sensitive", sensitive).put("whole", whole));
