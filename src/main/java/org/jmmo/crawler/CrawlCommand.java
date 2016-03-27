@@ -83,7 +83,7 @@ public class CrawlCommand extends BareCommand {
     }
 
     @Option(longName = "updateLinks", shortName = "ul", argName = "updateLinks")
-    @Description("Specifies would be links in html documents updated to point to downloaded pages. Defaults is false.")
+    @Description("(Experimental) specifies would be links in html documents updated to point to downloaded pages. Defaults is false.")
     public void setUpdateLinks(String updateLinks) {
         this.updateLinks = Boolean.valueOf(updateLinks);
     }

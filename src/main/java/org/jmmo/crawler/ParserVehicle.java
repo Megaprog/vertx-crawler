@@ -19,9 +19,15 @@ public class ParserVehicle extends AbstractVerticle {
 
     private static final Logger log = LoggerFactory.getLogger(ParserVehicle.class);
 
+    protected boolean updateLinks;
+    protected boolean storeOriginals;
+
     @Override
     public void start() throws Exception {
         log.info("started");
+
+        updateLinks = config().getBoolean("updateLinks");
+        storeOriginals = config().getBoolean("storeOriginals");
 
         getVertx().eventBus().consumer(CrawlMessages.PARSE, message -> {
             log.debug("Parsing " + message.body());
@@ -39,7 +45,7 @@ public class ParserVehicle extends AbstractVerticle {
                 links.forEach(element -> {
                     getVertx().eventBus().send(CrawlMessages.URL_FOUND, new JsonObject()
                             .put("url", element.attr("href")).put("baseUrl", baseUrl).put("file", file).put("level", level), ar -> {
-                        if (ar.succeeded()) {
+                        if (updateLinks && ar.succeeded()) {
                             final String newUrl = (String) ar.result().body();
                             if (newUrl != null) {
                                 element.attr("href", newUrl);
@@ -47,9 +53,9 @@ public class ParserVehicle extends AbstractVerticle {
                         }
 
                         if (++counter[0] == links.size()) {
-                            if (config().getBoolean("updateLinks")) {
+                            if (updateLinks) {
                                 final Path original = Paths.get(file);
-                                if (config().getBoolean("storeOriginals")) {
+                                if (storeOriginals) {
                                     final String name = original.getFileName().toString();
                                     final int extensionIndex = name.lastIndexOf(".");
                                     final Path backup = original.resolveSibling((extensionIndex > -1 ? name.substring(0, extensionIndex) : name) + BACKUP_EXTENSION);
